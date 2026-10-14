@@ -4,6 +4,7 @@ import "dotenv/config";
 import { executeTool } from "../executor/toolExecutor";
 import { toolRegistry } from "../tools/toolRegistry";
 import { retry, withTimeout } from "./retry";
+import { addToolError, type TraceEvent } from "./trace";
 
 const client = new OpenAI({
   //1. اتصال به Groq
@@ -26,7 +27,7 @@ export async function askLLM(messages: any[]) {
   const MAX_ITERATIONS = 10;
 
   // برای Evaluation و Debugging
-  const trace: any[] = [];
+  const trace: TraceEvent[] = [];
   //3. Agent Loop
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
     const response = await client.chat.completions.create({
@@ -98,6 +99,7 @@ export async function askLLM(messages: any[]) {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown tool error";
+        addToolError(trace, toolCall.function.name, errorMessage);
 
         messages.push({
           role: "tool",
