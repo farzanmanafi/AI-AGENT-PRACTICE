@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { searchKnowledgeTool } from "../tools/searchKnowledge";
 
 async function main() {
-  const question = "Who created Python?";
+  const question = "Who created Javascript?";
 
   // Step 1: Search the knowledge base
   const searchResult = await searchKnowledgeTool.execute({ question });

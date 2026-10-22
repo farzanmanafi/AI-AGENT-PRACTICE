@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import { GoogleGenAI } from "@google/genai";
 import { ChromaClient } from "chromadb";
@@ -65,7 +64,7 @@ export const searchKnowledgeTool = {
 
     const results = await collection.query({
       queryEmbeddings: [queryVector],
-      nResults: 3,
+      nResults: 2,
     });
 
     const documents = results.documents[0] ?? [];
@@ -73,29 +72,40 @@ export const searchKnowledgeTool = {
 
     const threshold = 0.7;
 
-    const relevantChunks = documents
-      .map((document, index) => ({
+    const candidates = documents.map((document, index) => {
+      const distance = distances[index];
+
+      return {
         text: document,
-        distance: distances[index],
-      }))
-      .filter(
-        (chunk) =>
-          chunk.distance !== null &&
-          chunk.distance !== undefined &&
-          chunk.distance <= threshold,
-      );
+        distance,
+        accepted:
+          distance !== null && distance !== undefined && distance <= threshold,
+      };
+    });
+
+    const relevantChunks = candidates
+      .filter((chunk) => chunk.accepted)
+      .map(({ text, distance }) => ({
+        text,
+        distance,
+      }));
 
     if (relevantChunks.length === 0) {
       return {
         found: false,
-        message: "No sufficiently close information was found in the knowledge base.",
+        message:
+          "No sufficiently close information was found in the knowledge base.",
+        threshold,
         chunks: [],
+        candidates,
       };
     }
 
     return {
       found: true,
+      threshold,
       chunks: relevantChunks,
+      candidates,
     };
   },
 };
